@@ -1,13 +1,14 @@
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { jwtConstants } from '../jwt.constants';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { UserJwt } from 'src/user/user.interface';
-import { AuthService } from '../auth.service';
+import { UserData, UserJwt } from 'src/user/user.interface';
+import { UserService } from 'src/user/user.service';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private authService: AuthService) {
+  constructor(private userService: UserService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -15,7 +16,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(user: UserJwt): Promise<UserJwt> {
-    return { uuid: user.uuid, email: user.email };
+  async validate(user: UserJwt): Promise<UserData> {
+    const _user = await this.userService.findOneByUuid(user.uuid);
+    if (user.uuid === _user.uuid) {
+      return {
+        uuid: _user.uuid,
+        username: _user.username,
+        email: _user.email,
+      };
+    } else {
+      throw new NotFoundException();
+    }
   }
 }

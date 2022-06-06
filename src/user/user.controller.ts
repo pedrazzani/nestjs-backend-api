@@ -10,6 +10,6 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Get('user')
   findOne(@Request() req) {
-    return this.userService.findOne(req.user.email);
+    return req.user;
   }
 }
